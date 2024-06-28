@@ -24,7 +24,6 @@ def main():
         load_dotenv()
         speech_key = os.getenv('SPEECH_KEY')
         speech_region = os.getenv('SPEECH_REGION')
-        endpoint_id = os.getenv('ENDPOINT_ID_EN')
 
         # Configure translation
         translation_config = speech_sdk.translation.SpeechTranslationConfig(speech_key, speech_region)

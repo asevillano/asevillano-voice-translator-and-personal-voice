@@ -9,6 +9,7 @@ try:
 except ImportError:
     print('Pleae copy folder https://github.com/Azure-Samples/cognitive-services-speech-sdk/tree/master/samples/custom-voice/python/customvoice and keep the same folder structure as github.' )
     quit()
+
 import azure.cognitiveservices.speech as speechsdk
 
 
@@ -22,23 +23,23 @@ def create_personal_voice(project_id: str,
 
     # create project
     project = customvoice.Project.create(config, project_id, customvoice.ProjectKind.PersonalVoice)
-    print('1. Project created. project id: %s' % project.id)
+    print('Project created. project id: %s' % project.id)
 
     # upload consent
     consent = customvoice.Consent.create(config, project_id, consent_id, voice_talent_name, company_name, consent_file_path, 'es-ES')
     if consent.status == customvoice.Status.Failed:
-        print('2. Create consent failed. consent id: %s' % consent.id)
+        print('Create consent failed. consent id: %s' % consent.id)
         raise Exception
     elif consent.status == customvoice.Status.Succeeded:
-        print('3. Create consent succeeded. consent id: %s' % consent.id)
+        print('Create consent succeeded. consent id: %s' % consent.id)
 
     # create personal voice
     personal_voice = customvoice.PersonalVoice.create(config, project_id, personal_voice_id, consent_id, audio_folder)
     if personal_voice.status == customvoice.Status.Failed:
-        print('4. Create personal voice failed. personal voice id: %s' % personal_voice.id)
+        print('Create personal voice failed. personal voice id: %s' % personal_voice.id)
         raise Exception
     elif personal_voice.status == customvoice.Status.Succeeded:
-        print('5. Create personal voice succeeded. personal voice id: %s, speaker profile id: %s' % (personal_voice.id, personal_voice.speaker_profile_id))
+        print('Create personal voice succeeded. personal voice id: %s, speaker profile id: %s' % (personal_voice.id, personal_voice.speaker_profile_id))
     return personal_voice.speaker_profile_id
 
 
@@ -78,11 +79,7 @@ def speech_synthesis_to_wave_file(text: str, output_file_path: str, speaker_prof
             print("result id: {}".format(result.result_id))
 
 
-
-# Get Configuration Settings
-load_dotenv()
-speech_key = os.getenv('SPEECH_KEY')
-speech_region = os.getenv('SPEECH_REGION')
+# MAIN APPLICATION TO CREATE THE PERSONAL VOICE
 
 logging.basicConfig(filename="customvoice.log",
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -90,37 +87,46 @@ logging.basicConfig(filename="customvoice.log",
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
+# Get Configuration Settings
+load_dotenv()
+speech_key = os.getenv('SPEECH_KEY')
+speech_region = os.getenv('SPEECH_REGION')
+project_id = os.getenv('PROJECT_ID')
+consent_id = os.getenv('CONSENT_ID')
+personal_voice_id = os.getenv('PERSONAL_VOICE_ID')
+
+# step 1: create personal voice
+# Need consent file and audio file to create personal voice.
+# This is consent WAV file template.
+# I [voice talent name] am aware that recordings of my voice will be used by [company name] to create and use a synthetic version of my voice.
+# You can find sample consent file here
+# https://github.com/Azure-Samples/Cognitive-Speech-TTS/blob/master/CustomVoice/Sample%20Data/Individual%20utterances%20%2B%20matching%20script/VoiceTalentVerbalStatement.wav
+
+consent_file_path = os.getenv('CONSENT_FILE_PATH')
+voice_talent_name = os.getenv('VOICE_TALENT_NAME')
+company_name = os.getenv('COMPANY_NAME')
+
 config = customvoice.Config(speech_key, speech_region, logger)
 
-project_id = 'personal-voice-project-asc-1'
-consent_id = 'personal-voice-consent-asc-1'
-personal_voice_id  = 'personal-voice-asc-1'
+
+
+
+# Need 5 - 90 seconds audio file.
+# You can find sample audio file here.
+# https://github.com/Azure-Samples/Cognitive-Speech-TTS/blob/master/CustomVoice/Sample%20Data/Individual%20utterances%20%2B%20matching%20script/SampleAudios.zip
+audio_folder = r'data\\' # WAV files
 
 try:
-    # step 1: create personal voice
-    # Need consent file and audio file to create personal voice.
-    # This is consent file template.
-    # I [voice talent name] am aware that recordings of my voice will be used by [company name] to create and use a synthetic version of my voice.
-    # You can find sample consent file here
-    # https://github.com/Azure-Samples/Cognitive-Speech-TTS/blob/master/CustomVoice/Sample%20Data/Individual%20utterances%20%2B%20matching%20script/VoiceTalentVerbalStatement.wav
-    consent_file_path = 'consentimiento.wav'
-    voice_talent_name = 'Angel Sevillano'
-    company_name = 'Microsoft'
-
-    # Need 5 - 90 seconds audio file.
-    # You can find sample audio file here.
-    # https://github.com/Azure-Samples/Cognitive-Speech-TTS/blob/master/CustomVoice/Sample%20Data/Individual%20utterances%20%2B%20matching%20script/SampleAudios.zip
-    audio_folder = r'data\\'
-    print(audio_folder)
     speaker_profile_id = create_personal_voice(project_id, 
                                             consent_id, consent_file_path, voice_talent_name, company_name,
                                             personal_voice_id, audio_folder)
 
     print(f'speaker_profile_id: {speaker_profile_id}')
 
-    # step 2: synthesis wave
+    # step 2: synthesis wave (just for testing)
     text = 'Esta es una voz personal. Prueba 1'
     output_wave_file_path = 'output_sdk.wav'
     speech_synthesis_to_wave_file(text, output_wave_file_path, speaker_profile_id)
+
 except Exception as e:
     print(e)
